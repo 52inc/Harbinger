@@ -10,8 +10,7 @@ class RestartReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
         intent?.let {
             if (it.action == Intent.ACTION_MY_PACKAGE_REPLACED || it.action == Intent.ACTION_BOOT_COMPLETED) {
-                // Restart Jobs
-
+                Harbinger.rescheduleJobs()
             }
         }
     }

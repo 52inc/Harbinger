@@ -31,8 +31,4 @@ abstract class Job {
         applicationContext = context.applicationContext
         return this
     }
-
-    internal fun runJob() {
-
-    }
 }

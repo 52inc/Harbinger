@@ -5,7 +5,7 @@ import com.ftinc.harbinger.util.PersistableBundleCompat
 
 data class JobRequest(
     val id: Int = -1,
-    val tag: String? = null,
+    val tag: String,
     val extras: PersistableBundleCompat,
 
     // Exact, or execution window
@@ -24,12 +24,17 @@ data class JobRequest(
         builder.endTimeInMillis, builder.exact, builder.intervalInMillis)
 
     class Builder(val tag: String) {
-        var id: Int = -1
-        var exact: Boolean = false
-        var extras = PersistableBundleCompat()
+        internal var id: Int = -1
+        internal var exact: Boolean = false
+        internal var extras = PersistableBundleCompat()
         internal var startTimeInMillis: Long = -1L
         internal var endTimeInMillis: Long = -1L
         internal var intervalInMillis: Long? = null
+
+        fun setId(id: Int): Builder {
+            this.id = id
+            return this
+        }
 
         fun setExecutionWindow(startTimeInMillis: Long, endTimeInMillis: Long): Builder {
             this.startTimeInMillis = startTimeInMillis
@@ -59,5 +64,6 @@ data class JobRequest(
 
     companion object {
         const val KEY_EXTRAS = "com.ftinc.harbinger.JOB_EXTRAS"
+        const val KEY_TAG = "com.ftinc.harbinger.JOB_TAG"
     }
 }

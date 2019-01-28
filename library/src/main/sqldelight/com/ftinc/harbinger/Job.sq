@@ -1,0 +1,29 @@
+CREATE TABLE jobs (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    job_id INTEGER AS Integer NOT NULL,
+    tag TEXT NOT NULL,
+    extras TEXT NOT NULL,
+    start_time INTEGER NOT NULL,
+    end_time INTEGER NOT NULL,
+    exact INTEGER AS Integer NOT NULL,
+    interval INTEGER
+);
+
+insertJob:
+INSERT INTO jobs (job_id, tag, extras, start_time, end_time, exact, interval)
+VALUES (?, ?, ?, ?, ?, ? ,?);
+
+selectAll:
+SELECT * FROM jobs;
+
+forJobId:
+SELECT * FROM jobs WHERE job_id = :job_id;
+
+forTag:
+SELECT * FROM jobs WHERE tag = :tag;
+
+deleteByJobId:
+DELETE FROM jobs WHERE job_id = :job_id;
+
+deleteAll:
+DELETE FROM jobs;
