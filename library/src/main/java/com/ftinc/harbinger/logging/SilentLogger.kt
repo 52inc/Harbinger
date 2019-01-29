@@ -1,7 +1,7 @@
 package com.ftinc.harbinger.logging
 
 
-class SilentLogger : JobLogger {
+class SilentLogger : WorkLogger {
 
     override fun log(priority: Int, tag: String?, message: String?, throwable: Throwable?) {
         // Do Nothing

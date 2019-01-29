@@ -6,7 +6,7 @@ import java.io.PrintWriter
 import java.io.StringWriter
 
 
-class LogcatLogger(private val defaultTag: String = "App") : JobLogger {
+class LogcatLogger(private val defaultTag: String = "App") : WorkLogger {
 
     override fun log(priority: Int, tag: String?, message: String?, throwable: Throwable?) {
         val safeTag = tag.asSafeTag()

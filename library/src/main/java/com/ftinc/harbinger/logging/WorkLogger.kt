@@ -3,7 +3,7 @@ package com.ftinc.harbinger.logging
 import android.util.Log
 
 
-interface JobLogger {
+interface WorkLogger {
 
     val explicitTag: ThreadLocal<String>
         get() = ThreadLocal()

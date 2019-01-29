@@ -1,0 +1,31 @@
+CREATE TABLE work_orders (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    work_id INTEGER AS Integer NOT NULL,
+    tag TEXT NOT NULL,
+    extras TEXT NOT NULL,
+    start_time INTEGER NOT NULL,
+    day INTEGER AS Integer NOT NULL,
+    exact INTEGER AS Integer NOT NULL,
+    interval INTEGER NOT NULL
+);
+
+CREATE UNIQUE INDEX work_orders_work_id ON work_orders(work_id);
+
+insert:
+INSERT OR REPLACE INTO work_orders (work_id, tag, extras, start_time, day, exact, interval)
+VALUES (?, ?, ?, ?, ?, ? ,?);
+
+selectAll:
+SELECT * FROM work_orders;
+
+forJobId:
+SELECT * FROM work_orders WHERE work_id = :job_id;
+
+forTag:
+SELECT * FROM work_orders WHERE tag = :tag;
+
+deleteByJobId:
+DELETE FROM work_orders WHERE work_id = :job_id;
+
+deleteAll:
+DELETE FROM work_orders;

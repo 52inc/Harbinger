@@ -6,7 +6,8 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
-import com.ftinc.harbinger.job.MessageJob
+import com.facebook.stetho.Stetho
+import com.ftinc.harbinger.job.MessageWorker
 
 
 class App : Application() {
@@ -14,13 +15,15 @@ class App : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        createChannel(this, MessageJob.CHANNEL_ID) {
+        Stetho.initializeWithDefaults(this)
+
+        createChannel(this, MessageWorker.CHANNEL_ID) {
             name = "Harbinger Test"
             description = "Testing Notification dispatching"
         }
 
         Harbinger.create(this)
-            .registerJobCreator(MessageJob.TAG, MessageJob.Creator())
+            .registerCreator(MessageWorker.TAG, MessageWorker.Creator())
     }
 
     @SuppressLint("WrongConstant")

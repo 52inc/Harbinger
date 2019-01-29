@@ -3,19 +3,18 @@ package com.ftinc.harbinger.job
 import android.support.v4.app.NotificationCompat
 import android.support.v4.app.NotificationManagerCompat
 import android.util.Log
-import com.ftinc.harbinger.Job
-import com.ftinc.harbinger.JobCreator
+import com.ftinc.harbinger.work.Worker
+import com.ftinc.harbinger.work.WorkCreator
 import com.ftinc.harbinger.R
-import com.ftinc.harbinger.util.PersistableBundleCompat
-import kotlin.math.sign
+import com.ftinc.harbinger.util.support.PersistableBundleCompat
 
 
-class MessageJob : Job() {
+class MessageWorker : Worker() {
 
-    override fun doWork(extras: PersistableBundleCompat): Result {
+    override suspend fun doWork(extras: PersistableBundleCompat) {
         val signalId = extras.getInt("id", -1)
 
-        Log.d("MessageJob", "Job Fired($signalId), Show notification.")
+        Log.d("MessageJob", "Job Fired($signalId, thread: ${Thread.currentThread().name}), Show notification.")
 
         val notificationManager = NotificationManagerCompat.from(applicationContext)
 
@@ -29,14 +28,12 @@ class MessageJob : Job() {
             .build()
 
         notificationManager.notify(NOTIFICATION_ID, notification)
-
-        return Result.Success
     }
 
-    class Creator : JobCreator {
+    class Creator : WorkCreator {
 
-        override fun createJob(): Job {
-            return MessageJob()
+        override fun createWorker(): Worker {
+            return MessageWorker()
         }
     }
 

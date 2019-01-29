@@ -1,4 +1,4 @@
-package com.ftinc.harbinger.util;
+package com.ftinc.harbinger.util.support;
 
 import android.support.annotation.RestrictTo;
 

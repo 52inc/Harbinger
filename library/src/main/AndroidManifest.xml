@@ -13,7 +13,7 @@
             </intent-filter>
         </receiver>
 
-        <receiver android:name=".JobReceiver" />
+        <receiver android:name=".WorkReceiver" />
     </application>
 
 </manifest>

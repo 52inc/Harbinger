@@ -5,13 +5,16 @@ import android.app.AlarmManager
 import android.content.Context
 import android.os.Build
 import android.os.PowerManager
-import com.ftinc.harbinger.logging.JobLogger
+import com.ftinc.harbinger.logging.WorkLogger
 import com.ftinc.harbinger.logging.LogcatLogger
-import com.ftinc.harbinger.storage.DatabaseJobStorage
-import com.ftinc.harbinger.storage.JobStorage
+import com.ftinc.harbinger.storage.DatabaseWorkStorage
+import com.ftinc.harbinger.storage.WorkStorage
+import com.ftinc.harbinger.work.WorkCreator
+import com.ftinc.harbinger.work.WorkOrder
+import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.produce
 import java.lang.IllegalStateException
 import java.util.concurrent.Executors
-import java.util.concurrent.Future
 
 /**
  * > a person or thing that announces or signals the approach of another.
@@ -29,15 +32,15 @@ object Harbinger {
 
     private lateinit var applicationContext: Context
     private lateinit var powerManager: PowerManager
-    private lateinit var scheduler: JobScheduler
+    private lateinit var scheduler: WorkScheduler
 
-    internal var jobLogger: JobLogger = LogcatLogger()
-    internal val jobCreators = HashMap<String, JobCreator>()
-    internal val jobExecutor = Executors.newSingleThreadExecutor()
-    internal val jobFutures = ArrayList<Future<Job.Result>>()
+    internal var logger: WorkLogger = LogcatLogger()
+    internal val workCreators = HashMap<String, WorkCreator>()
+    internal val workExecutor = Executors.newSingleThreadExecutor()
+    internal val workJobs = ArrayList<Job>()
 
-    private val jobStorageExecutor = Executors.newSingleThreadExecutor()
-    private var storage: JobStorage? = null
+    private val storageScope = CoroutineScope(Dispatchers.IO)
+    private var storage: WorkStorage? = null
 
 
     /**
@@ -58,8 +61,8 @@ object Harbinger {
             powerManager = applicationContext.getSystemService(Context.POWER_SERVICE) as PowerManager
 
             // Create scheduler and storage
-            scheduler = JobScheduler(context)
-            storage = DatabaseJobStorage(context)
+            scheduler = WorkScheduler(context)
+            storage = DatabaseWorkStorage(context)
 
             initialized = true
         }
@@ -69,17 +72,17 @@ object Harbinger {
     /**
      * Set the logger that this library should use
      */
-    fun setLogger(logger: JobLogger): Harbinger {
-        jobLogger = logger
+    fun setLogger(logger: WorkLogger): Harbinger {
+        this.logger = logger
         return this
     }
 
     /**
-     * Set the storage mechanism for storing/retrieving Jobs. By default it is backed by [DatabaseJobStorage] that
+     * Set the storage mechanism for storing/retrieving Jobs. By default it is backed by [DatabaseWorkStorage] that
      * uses SQLite to store and retrieve jobs
-     * @param storage the [JobStorage] implementation
+     * @param storage the [WorkStorage] implementation
      */
-    fun setStorage(storage: JobStorage): Harbinger {
+    fun setStorage(storage: WorkStorage): Harbinger {
         this.storage = storage
         return this
     }
@@ -90,29 +93,30 @@ object Harbinger {
      * @param tag the tag of the Job/JobCreator to register. Must be unique.
      * @param creator the job creator to register
      */
-    fun registerJobCreator(tag: String, creator: JobCreator): Harbinger {
+    fun registerCreator(tag: String, creator: WorkCreator): Harbinger {
         checkInitialization()
-        jobCreators[tag] = creator
+        workCreators[tag] = creator
         return this
     }
 
     /**
      * Schedule a job request
-     * @param request the [JobRequest] to schedule
+     * @param request the [WorkOrder] to schedule
      * @return the job id of the recently scheduled task
      */
-    fun schedule(request: JobRequest): Int {
+    fun schedule(request: WorkOrder): Int {
         checkInitialization()
-        val jobId = scheduler.schedule(request)
+        val workId = scheduler.schedule(request)
 
         // Store Request
-        jobStorageExecutor.submit {
-            val jobRequest = request.copy(id = jobId)
-            storage?.putJob(jobRequest)
+        storageScope.launch {
+            val order = request.copy(id = workId)
+            storage?.insert(order)
+            logger.d("Inserted WorkOrder($order)")
         }
 
         // Return the job id
-        return jobId
+        return workId
     }
 
     /**
@@ -121,22 +125,24 @@ object Harbinger {
     fun unschedule(jobId: Int? = null) {
         if (jobId != null) {
             // Delete stored job
-            jobStorageExecutor.submit {
-                storage?.getJobRequest(jobId)?.apply {
+            storageScope.launch {
+                storage?.find(jobId)?.apply {
                     scheduler.unschedule(this)
+                    logger.d("Unscheduled WorkOrder($jobId)")
                 }
-                storage?.deleteJob(jobId)
+                storage?.delete(jobId)
+                logger.d("Deleted WorkOrder($jobId)")
             }
-
-
         } else {
-            jobStorageExecutor.submit {
-                storage?.getJobRequests()?.let { requests ->
+            storageScope.launch {
+                storage?.getAll()?.let { requests ->
                     requests.forEach {
                         scheduler.unschedule(it)
+                        logger.d("Unscheduling WorkOrder(${it.id})")
                     }
                 }
-                storage?.deleteAllJobs()
+                storage?.deleteAll()
+                logger.d("Deleted all WorkOrders")
             }
         }
     }
@@ -155,13 +161,27 @@ object Harbinger {
     }
 
     /**
+     * Get a [WorkOrder] by it's id
+     */
+    internal suspend fun getWorkOrder(id: Int): WorkOrder? {
+        return storage?.find(id)
+    }
+
+    /**
+     * Reschedule a work order for the next available date
+     */
+    internal fun reschedule(order: WorkOrder, lastScheduledTime: Long) {
+        scheduler.reschedule(order, lastScheduledTime)
+    }
+
+    /**
      * Reschedule jobs from storage against the [AlarmManager]
      */
     internal fun rescheduleJobs() {
         checkInitialization()
-        jobStorageExecutor.submit {
-            val requests = storage?.getJobRequests()
-            jobLogger.i("Rescheduling Jobs: $requests")
+        storageScope.launch {
+            val requests = storage?.getAll()
+            logger.i("Rescheduling Jobs: $requests")
             requests?.forEach { request ->
                 scheduler.schedule(request)
             }
