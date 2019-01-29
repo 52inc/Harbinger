@@ -32,10 +32,9 @@ data class WorkOrder(
 
     class Builder(val tag: String) {
         var id: Int = NO_ID
-        var extras: PersistableBundleCompat =
-            PersistableBundleCompat()
+        var extras: PersistableBundleCompat = PersistableBundleCompat()
         var startTimeInMillis: Long = 0L
-        var day: Int = Calendar.SUNDAY
+        var day: Int = -1
         var exact: Boolean = false
         var intervalInMillis: Long = MIN_INTERVAL
 

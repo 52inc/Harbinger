@@ -2,6 +2,9 @@ apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 apply plugin: 'com.squareup.sqldelight'
 
+group = GROUP
+version = VERSION_NAME
+
 android {
     compileSdkVersion 28
 
@@ -29,9 +32,11 @@ dependencies {
     implementation 'com.android.support:support-annotations:28.0.0'
 
     testImplementation 'junit:junit:4.12'
-    testImplementation "org.mockito:mockito-core:1.10.19"
+    testImplementation "org.mockito:mockito-core:2.23.0"
     testImplementation "org.amshove.kluent:kluent:1.44"
     androidTestImplementation "org.amshove.kluent:kluent:1.44"
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
 }
+
+apply from: '../tools/bintray-publish-android.gradle'
