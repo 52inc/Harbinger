@@ -16,7 +16,7 @@ class DatabaseWorkStorage(context: Context) : WorkStorage {
 
     override suspend fun insert(order: WorkOrder) {
         database.workQueries.insert(order.id, order.tag, order.extras.saveToXml(), order.startTimeInMillis,
-            order.day, if (order.exact) 1 else 0, order.intervalInMillis)
+            order.endTimeInMillis, order.day, if (order.exact) 1 else 0, order.intervalInMillis)
     }
 
     override suspend fun find(id: Int): WorkOrder? {
@@ -38,14 +38,15 @@ class DatabaseWorkStorage(context: Context) : WorkStorage {
     companion object {
         private const val DB_NAME = "harbinger_work_orders.db"
 
-        private val workMapper = { _: Long, work_id: Int, tag: String, extras: String, start_time: Long, day: Int, exact: Int, interval: Long ->
+        private val workMapper = { _: Long, work_id: Int, tag: String, extras: String, start_time: Long, end_time: Long?, day: Int?, exact: Int, interval: Long? ->
             WorkOrder(
                 work_id,
                 tag,
                 PersistableBundleCompat.fromXml(extras),
                 start_time,
-                day,
+                end_time,
                 exact == 1,
+                day,
                 interval
             )
         }

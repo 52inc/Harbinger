@@ -4,16 +4,17 @@ CREATE TABLE work_orders (
     tag TEXT NOT NULL,
     extras TEXT NOT NULL,
     start_time INTEGER NOT NULL,
-    day INTEGER AS Integer NOT NULL,
+    end_time INTEGER,
+    day INTEGER AS Integer,
     exact INTEGER AS Integer NOT NULL,
-    interval INTEGER NOT NULL
+    interval INTEGER
 );
 
 CREATE UNIQUE INDEX work_orders_work_id ON work_orders(work_id);
 
 insert:
-INSERT OR REPLACE INTO work_orders (work_id, tag, extras, start_time, day, exact, interval)
-VALUES (?, ?, ?, ?, ?, ? ,?);
+INSERT OR REPLACE INTO work_orders (work_id, tag, extras, start_time, end_time, day, exact, interval)
+VALUES (?, ?, ?, ?, ?, ? ,?, ?);
 
 selectAll:
 SELECT * FROM work_orders;
