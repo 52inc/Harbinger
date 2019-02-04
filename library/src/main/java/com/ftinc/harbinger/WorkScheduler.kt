@@ -7,6 +7,7 @@ import android.os.Build
 import com.ftinc.harbinger.util.Chronos
 import com.ftinc.harbinger.util.extensions.iso8601
 import com.ftinc.harbinger.work.WorkOrder
+import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 
 
@@ -27,7 +28,13 @@ class WorkScheduler(val context: Context) {
         } else {
             order.id
         }
-        val operationTime = Chronos.next(order.startTimeInMillis, order.day)
+
+        val operationTime = (if (order.day != null) {
+            // Weekly Recurring timer
+            Chronos.next(order.startTimeInMillis, order.day)
+        } else {
+            Chronos.next(order.startTimeInMillis, order.endTimeInMillis, order.intervalInMillis)
+        }) ?: return WorkOrder.DEAD_ID
 
         intent.putExtra(WorkOrder.KEY_ID, id)
         intent.putExtra(WorkOrder.KEY_TIME, operationTime.timeInMillis)
@@ -40,9 +47,12 @@ class WorkScheduler(val context: Context) {
             } else {
                 alarmManager.setExact(AlarmManager.RTC_WAKEUP, operationTime.timeInMillis, operation)
             }
-        } else {
+        } else if (order.intervalInMillis != null) {
             Harbinger.logger.d("Scheduling periodic weekly alarm for (${operationTime.iso8601()}, with interval ${order.intervalInMillis})")
             alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, operationTime.timeInMillis, order.intervalInMillis, operation)
+        } else {
+            // We were unable to schedule this work order, return dead.
+            return WorkOrder.DEAD_ID
         }
 
         return id
@@ -54,7 +64,7 @@ class WorkScheduler(val context: Context) {
      * @param lastScheduledTime the last scheduled time of this work order so to accurately reschedule by it's interval
      */
     fun reschedule(order: WorkOrder, lastScheduledTime: Long) {
-        if (order.exact) {
+        if (order.exact && order.day != null && order.intervalInMillis != null) {
             val intent = WorkReceiver.createIntent(context)
             val operationTime = lastScheduledTime + order.intervalInMillis
 
@@ -68,6 +78,9 @@ class WorkScheduler(val context: Context) {
             } else {
                 alarmManager.setExact(AlarmManager.RTC_WAKEUP, operationTime, operation)
             }
+        } else if (order.exact && order.day == null) {
+            // This isn't a weekly repeating timer, it's a date-set variable-repeating timer w/ possible end date
+            schedule(order)
         }
     }
 

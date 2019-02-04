@@ -12,6 +12,8 @@ import java.util.Calendar
  * @param tag the tag of the order/request, used to find the WorkCreator
  * @param extras the extra data content related to this request
  * @param startTimeInMillis the start time during the [day] that this request should schedule for
+ * @param endTimeInMillis the end time when this work should not execute. If set, exact will be set to true
+ * @param day the day of the week that this work order should execute on
  * @param exact whether or not this order needs to be filled at the exact [startTimeInMillis], or if it can allow for doze/standby
  * @param intervalInMillis the interval in ms that this weekly order should repeat
  */
@@ -21,22 +23,24 @@ data class WorkOrder(
     val extras: PersistableBundleCompat,
 
     val startTimeInMillis: Long,
-    val day: Int,
+    val endTimeInMillis: Long?,
     val exact: Boolean,
-    val intervalInMillis: Long
+    val day: Int?,
+    val intervalInMillis: Long?
 ) {
 
-    private constructor(builder: Builder): this(builder.id, builder.tag, builder.extras, builder.startTimeInMillis, builder.day,
-        builder.exact, builder.intervalInMillis)
+    private constructor(builder: Builder): this(builder.id, builder.tag, builder.extras, builder.startTimeInMillis,
+        builder.endTimeInMillis, builder.exact, builder.day, builder.intervalInMillis)
 
 
     class Builder(val tag: String) {
         var id: Int = NO_ID
         var extras: PersistableBundleCompat = PersistableBundleCompat()
         var startTimeInMillis: Long = 0L
-        var day: Int = -1
+        var endTimeInMillis: Long? = null
+        var day: Int? = null
         var exact: Boolean = false
-        var intervalInMillis: Long = MIN_INTERVAL
+        var intervalInMillis: Long? = null
 
         fun extras(builder: Extras.() -> Unit) {
             extras = Extras().apply(builder).build()
@@ -44,14 +48,22 @@ data class WorkOrder(
 
         fun build(): WorkOrder {
             if (startTimeInMillis == 0L) throw IllegalArgumentException("Start Time must be greater than 0")
-            if (!day.isCalendarDay()) throw IllegalArgumentException("'day' must be one of the Calendar.DAY_OF_WEEK values")
-            // if (intervalInMillis < MIN_INTERVAL) throw IllegalArgumentException("interval must be greater than 15 minutes") /* disabled for testing */
+            if (day?.isCalendarDay() != false) throw IllegalArgumentException("'day' must be one of the Calendar.DAY_OF_WEEK values")
+            if (day == null && intervalInMillis != null && intervalInMillis!! < MIN_INTERVAL) throw IllegalArgumentException("Interval must be greater than 15 minutes when day is null") /* disabled for testing */
+            if (day != null && intervalInMillis == null) throw IllegalArgumentException("You MUST set an interval if you have set a day")
+
+            // If end time is specified, this is automatically set to exact
+            if (endTimeInMillis != null || intervalInMillis == null) {
+                exact = true
+            }
+
             return WorkOrder(this)
         }
     }
 
     companion object {
         const val NO_ID = -1
+        const val DEAD_ID = -2
         const val MIN_INTERVAL = 900000L
 
         const val KEY_ID = "com.ftinc.harbinger.work.ID"
@@ -80,8 +92,4 @@ class Extras {
     infix fun String.to(value: Array<String>) = bundle.putStringArray(this, value)
 
     internal fun build(): PersistableBundleCompat = bundle
-}
-
-fun extra(builder: Extras.() -> Unit): PersistableBundleCompat {
-    return Extras().apply(builder).build()
 }

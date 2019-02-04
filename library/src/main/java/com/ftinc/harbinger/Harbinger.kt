@@ -12,7 +12,6 @@ import com.ftinc.harbinger.storage.WorkStorage
 import com.ftinc.harbinger.work.WorkCreator
 import com.ftinc.harbinger.work.WorkOrder
 import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.produce
 import java.lang.IllegalStateException
 import java.util.concurrent.Executors
 
@@ -107,12 +106,19 @@ object Harbinger {
     fun schedule(request: WorkOrder): Int {
         checkInitialization()
         val workId = scheduler.schedule(request)
-
-        // Store Request
-        storageScope.launch {
-            val order = request.copy(id = workId)
-            storage?.insert(order)
-            logger.d("Inserted WorkOrder($order)")
+        if (workId == WorkOrder.DEAD_ID) {
+            // Work order is dead, delete if possible
+            if (request.id != WorkOrder.NO_ID) {
+                storageScope.launch {
+                    storage?.delete(request.id)
+                }
+            }
+        } else {
+            storageScope.launch {
+                val order = request.copy(id = workId)
+                storage?.insert(order)
+                logger.d("Inserted WorkOrder($order)")
+            }
         }
 
         // Return the job id
@@ -180,10 +186,13 @@ object Harbinger {
     internal fun rescheduleJobs() {
         checkInitialization()
         storageScope.launch {
-            val requests = storage?.getAll()
-            logger.i("Rescheduling Jobs: $requests")
-            requests?.forEach { request ->
-                scheduler.schedule(request)
+            val orders = storage?.getAll()
+            logger.i("Rescheduling Jobs: $orders")
+            orders?.forEach { order ->
+                val id = scheduler.schedule(order)
+                if (id == WorkOrder.DEAD_ID) {
+                    storage?.delete(order.id)
+                }
             }
         }
     }
