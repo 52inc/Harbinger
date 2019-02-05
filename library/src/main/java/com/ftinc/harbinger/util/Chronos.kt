@@ -1,12 +1,25 @@
 package com.ftinc.harbinger.util
 
 import com.ftinc.harbinger.util.extensions.*
-import com.ftinc.harbinger.work.WorkOrder
 import java.util.*
 import java.util.Calendar.*
 
 
 object Chronos {
+
+    interface Clock {
+        fun now(): Long
+
+        companion object {
+            val systemClock = object : Clock {
+                override fun now(): Long {
+                    return System.currentTimeMillis()
+                }
+            }
+        }
+    }
+
+    internal var systemClock: Clock = Clock.systemClock
 
     /**
      * @see [Calendar.next]
@@ -98,14 +111,14 @@ object Chronos {
      */
     fun Calendar.next(startTimeInMillis: Long, endTimeInMillis: Long? = null, intervalInMillis: Long? = null): Calendar? {
         val now = this.clone() as Calendar
-        if (startTimeInMillis > System.currentTimeMillis()) {
+        if (startTimeInMillis > systemClock.now()) {
             // The target datetime is still in the future, schedule for that
             now.timeInMillis = startTimeInMillis
         } else if (intervalInMillis != null) {
 
             // Calculate the next valid work time based on interval
             var newTimeInMillis = startTimeInMillis
-            while (newTimeInMillis < System.currentTimeMillis()) {
+            while (newTimeInMillis < systemClock.now()) {
                 newTimeInMillis += intervalInMillis
             }
 

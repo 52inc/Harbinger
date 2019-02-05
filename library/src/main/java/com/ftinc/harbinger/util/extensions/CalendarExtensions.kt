@@ -5,12 +5,17 @@ import java.util.*
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
-fun String.toDate(): Date {
+
+/*
+ * ISO-8601 Date Extensions
+ */
+
+fun String.toISO8601Date(): Date {
     return SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).parse(this)
 }
 
 fun String.fromISO8601(): Long {
-    return this.toDate().time
+    return this.toISO8601Date().time
 }
 
 fun Date.iso8601(): String {
@@ -24,6 +29,20 @@ fun Calendar.iso8601(): String {
 fun Long.iso8601(): String {
     return Date(this).iso8601()
 }
+
+/*
+ * Calendar Functional Builder Extensions
+ */
+
+fun calendar(timeZone: TimeZone = TimeZone.getDefault(), locale: Locale? = null, builder: Calendar.() -> Unit): Calendar {
+    val calendar = Calendar.getInstance(timeZone, locale)
+    calendar.builder()
+    return calendar
+}
+
+/*
+ * Calendar Helper Extensions
+ */
 
 fun Int.isCalendarDay(): Boolean = (Calendar.SUNDAY..Calendar.SATURDAY).contains(this)
 

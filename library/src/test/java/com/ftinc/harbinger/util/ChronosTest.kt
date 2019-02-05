@@ -4,11 +4,29 @@ import org.junit.Test
 import java.util.*
 import com.ftinc.harbinger.util.Chronos.next
 import com.ftinc.harbinger.util.extensions.*
+import org.amshove.kluent.`should be equal to`
+import org.amshove.kluent.`should be null`
+import org.amshove.kluent.`should not be null`
 import org.amshove.kluent.shouldEqualTo
+import org.junit.Before
 import java.util.Calendar.*
+import java.util.concurrent.TimeUnit
 
 class ChronosTest {
 
+    class MockClock : Chronos.Clock {
+        var time: Long = 0L
+        override fun now(): Long = time
+    }
+
+
+    private val clock = MockClock()
+
+
+    @Before
+    fun setUp() {
+        Chronos.systemClock = clock
+    }
 
     @Test
     fun `test next day later in week`() {
@@ -297,5 +315,63 @@ class ChronosTest {
         nextDay[MINUTE].shouldEqualTo(target.minute)
         nextDay[SECOND].shouldEqualTo(target.second)
         nextDay[MILLISECOND].shouldEqualTo(target.millisecond)
+    }
+
+    @Test
+    fun `test next interval time in future`() {
+        clock.time = 1000L
+        val startTime = 2000L
+
+        val result = Chronos.next(startTime)
+
+        result.`should not be null`()
+        result.timeInMillis.`should be equal to`(startTime)
+    }
+
+    @Test
+    fun `test next interval time in past without interval`() {
+        clock.time = 2000L
+        val startTime = 1000L
+
+        val result = Chronos.next(startTime)
+
+        result.`should be null`()
+    }
+
+    @Test
+    fun `test next interval time in past with interval`() {
+        clock.time = 2000L
+        val startTime = 1000L
+        val interval = 600L
+
+        val result = Chronos.next(startTime, intervalInMillis = interval)
+
+        result.`should not be null`()
+        result.timeInMillis.`should be equal to`(2200L)
+    }
+
+    @Test
+    fun `test next interval time in past with interval and end date`() {
+        clock.time = 2000L
+        val startTime = 1000L
+        val endTime = 2300L
+        val interval = 600L
+
+        val result = Chronos.next(startTime, endTime, interval)
+
+        result.`should not be null`()
+        result.timeInMillis.`should be equal to`(2200L)
+    }
+
+    @Test
+    fun `test next interval time in past with interval and end date that can't be rescheduled`() {
+        clock.time = 2000L
+        val startTime = 1000L
+        val endTime = 2100L
+        val interval = 600L
+
+        val result = Chronos.next(startTime, endTime, interval)
+
+        result.`should be null`()
     }
 }
