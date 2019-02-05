@@ -23,6 +23,11 @@ android {
         }
     }
 
+    testOptions {
+        unitTests {
+            includeAndroidResources = true
+        }
+    }
 }
 
 dependencies {
@@ -34,9 +39,18 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     testImplementation "org.mockito:mockito-core:2.23.0"
     testImplementation "org.amshove.kluent:kluent:1.44"
+    testImplementation "org.robolectric:robolectric:4.1"
+    testImplementation "androidx.test:core:1.1.0"
+    testImplementation "androidx.test.ext:junit:1.1.0"
     androidTestImplementation "org.amshove.kluent:kluent:1.44"
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
+}
+
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
 }
 
 apply from: '../tools/bintray-publish-android.gradle'

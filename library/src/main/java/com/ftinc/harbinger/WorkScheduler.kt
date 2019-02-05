@@ -1,20 +1,22 @@
 package com.ftinc.harbinger
 
-import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.os.Build
+import com.ftinc.harbinger.scheduler.AlarmManagerScheduler
+import com.ftinc.harbinger.scheduler.Scheduler
 import com.ftinc.harbinger.util.Chronos
 import com.ftinc.harbinger.util.extensions.iso8601
 import com.ftinc.harbinger.work.WorkOrder
-import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 
 
-class WorkScheduler(val context: Context) {
+class WorkScheduler(
+    val context: Context,
+    var scheduler: Scheduler = AlarmManagerScheduler(context)
+) {
 
-    private val ids = AtomicInteger(1000000)
-    private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+    private val ids = AtomicInteger(IDS_OFFSET)
 
 
     /**
@@ -42,14 +44,10 @@ class WorkScheduler(val context: Context) {
         val operation = PendingIntent.getBroadcast(context, id, intent, PendingIntent.FLAG_UPDATE_CURRENT)
         if (order.exact) {
             Harbinger.logger.d("Scheduling exact weekly alarm for (${operationTime.iso8601()})")
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, operationTime.timeInMillis, operation)
-            } else {
-                alarmManager.setExact(AlarmManager.RTC_WAKEUP, operationTime.timeInMillis, operation)
-            }
+            scheduler.exact(operationTime.timeInMillis, operation)
         } else if (order.intervalInMillis != null) {
             Harbinger.logger.d("Scheduling periodic weekly alarm for (${operationTime.iso8601()}, with interval ${order.intervalInMillis})")
-            alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, operationTime.timeInMillis, order.intervalInMillis, operation)
+            scheduler.repeating(operationTime.timeInMillis, order.intervalInMillis, operation)
         } else {
             // We were unable to schedule this work order, return dead.
             return WorkOrder.DEAD_ID
@@ -73,11 +71,7 @@ class WorkScheduler(val context: Context) {
 
             Harbinger.logger.d("Re-scheduling exact weekly alarm for (${operationTime.iso8601()})")
             val operation = PendingIntent.getBroadcast(context, order.id, intent, PendingIntent.FLAG_UPDATE_CURRENT)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, operationTime, operation)
-            } else {
-                alarmManager.setExact(AlarmManager.RTC_WAKEUP, operationTime, operation)
-            }
+            scheduler.exact(operationTime, operation)
         } else if (order.exact && order.day == null) {
             // This isn't a weekly repeating timer, it's a date-set variable-repeating timer w/ possible end date
             schedule(order)
@@ -87,6 +81,10 @@ class WorkScheduler(val context: Context) {
     fun unschedule(request: WorkOrder) {
         val intent = WorkReceiver.createIntent(context)
         val operation = PendingIntent.getBroadcast(context, request.id, intent, PendingIntent.FLAG_UPDATE_CURRENT)
-        alarmManager.cancel(operation)
+        scheduler.cancel(operation)
+    }
+
+    companion object {
+        const val IDS_OFFSET = 1000000
     }
 }

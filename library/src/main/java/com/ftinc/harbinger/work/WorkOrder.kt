@@ -48,9 +48,11 @@ data class WorkOrder(
 
         fun build(): WorkOrder {
             if (startTimeInMillis == 0L) throw IllegalArgumentException("Start Time must be greater than 0")
-            if (day?.isCalendarDay() != false) throw IllegalArgumentException("'day' must be one of the Calendar.DAY_OF_WEEK values")
+            if (endTimeInMillis != null && startTimeInMillis > endTimeInMillis!!) throw IllegalArgumentException("Start time MUST be BEFORE end time")
+            if (day?.isCalendarDay() == false) throw IllegalArgumentException("'day' must be one of the Calendar.DAY_OF_WEEK values")
             if (day == null && intervalInMillis != null && intervalInMillis!! < MIN_INTERVAL) throw IllegalArgumentException("Interval must be greater than 15 minutes when day is null") /* disabled for testing */
             if (day != null && intervalInMillis == null) throw IllegalArgumentException("You MUST set an interval if you have set a day")
+            if (day != null && intervalInMillis != null && intervalInMillis!! % WEEK_INTERVAL != 0L) throw IllegalArgumentException("You MUST set an interval that is a multiple of 1 week in milliseconds if you have set a day")
 
             // If end time is specified, this is automatically set to exact
             if (endTimeInMillis != null || intervalInMillis == null) {
@@ -65,6 +67,7 @@ data class WorkOrder(
         const val NO_ID = -1
         const val DEAD_ID = -2
         const val MIN_INTERVAL = 900000L
+        const val WEEK_INTERVAL = 604800000L
 
         const val KEY_ID = "com.ftinc.harbinger.work.ID"
         const val KEY_TIME = "com.ftinc.harbinger.work.TIME"

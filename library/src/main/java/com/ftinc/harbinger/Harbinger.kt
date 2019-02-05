@@ -46,7 +46,7 @@ object Harbinger {
      * Initialize Harbinger with the android context
      * @param context the Android context to initialize internal components with, should be the Application context
      */
-    fun create(context: Context): Harbinger {
+    fun create(context: Context, workScheduler: WorkScheduler = WorkScheduler(context.applicationContext)): Harbinger {
         if (!initialized) {
 
             // Check if null, can happen during testing
@@ -60,7 +60,7 @@ object Harbinger {
             powerManager = applicationContext.getSystemService(Context.POWER_SERVICE) as PowerManager
 
             // Create scheduler and storage
-            scheduler = WorkScheduler(context)
+            scheduler = workScheduler
             storage = DatabaseWorkStorage(context)
 
             initialized = true
