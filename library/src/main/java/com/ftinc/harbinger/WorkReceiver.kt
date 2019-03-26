@@ -29,6 +29,9 @@ class WorkReceiver : CoroutineBroadcastReceiver() {
                         val worker = it.createWorker()
                         worker.setContext(context)
 
+                        // Put the scheduled time into the work order extras for reference
+                        workOrder.extras.putLong(WorkOrder.KEY_TIME, time)
+
                         // Start the worker and add it's resulting job to the list to track
                         Harbinger.workJobs += worker.startWork(workOrder.extras)
 
