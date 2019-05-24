@@ -16,7 +16,7 @@ import java.lang.IllegalStateException
 import java.util.concurrent.Executors
 
 /**
- * > a person or thing that announces or signals the approach of another.
+ * > A person or thing that announces or signals the approach of another.
  *
  * Schedule alarms and notifications through this single source to keep track and ensure that no id's get
  * contaminated or duplicated
@@ -38,7 +38,7 @@ object Harbinger {
     internal val workExecutor = Executors.newSingleThreadExecutor()
     internal val workJobs = ArrayList<Job>()
 
-    private val storageScope = CoroutineScope(Dispatchers.IO)
+    private val storageScope = CoroutineScope(Dispatchers.Default)
     private var storage: WorkStorage? = null
 
 
@@ -99,7 +99,7 @@ object Harbinger {
     }
 
     /**
-     * Schedule a job request
+     * Schedule a work order
      * @param request the [WorkOrder] to schedule
      * @return the job id of the recently scheduled task
      */
@@ -123,6 +123,44 @@ object Harbinger {
 
         // Return the job id
         return workId
+    }
+
+    /**
+     * Schedule a list of work orders
+     */
+    fun schedule(orders: List<WorkOrder>): List<Int> {
+        checkInitialization()
+
+        val orderIds = ArrayList<Int>()
+        val ordersToDelete = ArrayList<Int>()
+        val ordersToSave = ArrayList<WorkOrder>()
+
+        orders.forEach { order ->
+            val workId = scheduler.schedule(order)
+            if (workId == WorkOrder.DEAD_ID) {
+                if (order.id != WorkOrder.NO_ID) {
+                    ordersToDelete += order.id
+                }
+            } else {
+                ordersToSave += order.copy(id = workId)
+            }
+
+            orderIds += workId
+        }
+
+        if (ordersToDelete.isNotEmpty()) {
+            storageScope.launch {
+                storage?.delete(ordersToDelete)
+            }
+        }
+
+        if (ordersToSave.isNotEmpty()) {
+            storageScope.launch {
+                storage?.insert(ordersToSave)
+            }
+        }
+
+        return orderIds
     }
 
     /**
@@ -187,12 +225,18 @@ object Harbinger {
         checkInitialization()
         storageScope.launch {
             val orders = storage?.getAll()
+            val ordersToDelete = ArrayList<Int>()
             logger.i("Rescheduling Jobs: $orders")
+
             orders?.forEach { order ->
                 val id = scheduler.schedule(order)
                 if (id == WorkOrder.DEAD_ID) {
-                    storage?.delete(order.id)
+                    ordersToDelete += id
                 }
+            }
+
+            if (ordersToDelete.isNotEmpty()) {
+                storage?.delete(ordersToDelete)
             }
         }
     }

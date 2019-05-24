@@ -28,5 +28,8 @@ SELECT * FROM work_orders WHERE tag = :tag;
 deleteByJobId:
 DELETE FROM work_orders WHERE work_id = :job_id;
 
+deleteByMultipleJobIds:
+DELETE FROM work_orders WHERE work_id IN :job_ids;
+
 deleteAll:
 DELETE FROM work_orders;

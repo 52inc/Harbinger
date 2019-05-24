@@ -19,6 +19,15 @@ class DatabaseWorkStorage(context: Context) : WorkStorage {
             order.endTimeInMillis, order.day, if (order.exact) 1 else 0, order.intervalInMillis)
     }
 
+    override suspend fun insert(orders: List<WorkOrder>) {
+        database.transaction {
+            orders.forEach { order ->
+                database.workQueries.insert(order.id, order.tag, order.extras.saveToXml(), order.startTimeInMillis,
+                    order.endTimeInMillis, order.day, if (order.exact) 1 else 0, order.intervalInMillis)
+            }
+        }
+    }
+
     override suspend fun find(id: Int): WorkOrder? {
         return database.workQueries.forJobId(id, workMapper).executeAsOneOrNull()
     }
@@ -29,6 +38,10 @@ class DatabaseWorkStorage(context: Context) : WorkStorage {
 
     override suspend fun delete(id: Int) {
         database.workQueries.deleteByJobId(id)
+    }
+
+    override suspend fun delete(ids: List<Int>) {
+        database.workQueries.deleteByMultipleJobIds(ids)
     }
 
     override suspend fun deleteAll() {
