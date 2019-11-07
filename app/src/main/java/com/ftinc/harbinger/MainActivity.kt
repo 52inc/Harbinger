@@ -4,12 +4,13 @@ import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import com.ftinc.harbinger.job.MessageWorker
-import com.ftinc.harbinger.util.extensions.dayOfWeek
-import com.ftinc.harbinger.util.extensions.seconds
 import com.ftinc.harbinger.work.workOrder
-import kotlinx.android.synthetic.main.activity_main.*
-import java.util.*
+import org.threeten.bp.Duration
+import org.threeten.bp.LocalDateTime
+import org.threeten.bp.OffsetDateTime
+import org.threeten.bp.ZoneOffset
 import java.util.concurrent.atomic.AtomicInteger
+import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity() {
 
@@ -21,12 +22,12 @@ class MainActivity : AppCompatActivity() {
 
         actionSchedule.setOnClickListener {
 
-            val order = workOrder(MessageWorker.TAG) {
-                id = JOB_ID
-                exact = true
-                day = Calendar.getInstance().dayOfWeek
-                startTimeInMillis = System.currentTimeMillis() + 10.seconds()
-                intervalInMillis = 30.seconds()
+            val order = workOrder(MessageWorker.TAG, JOB_ID) {
+                days = setOf(
+                    LocalDateTime.now().dayOfWeek
+                )
+                startTime = OffsetDateTime.now(ZoneOffset.UTC).plusSeconds(10)
+                interval = Duration.ofMinutes(15L)
 
                 extras {
                     "id" to clickId.getAndIncrement()

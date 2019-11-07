@@ -1,81 +1,74 @@
 package com.ftinc.harbinger.work
 
 import com.ftinc.harbinger.util.support.PersistableBundleCompat
-import com.ftinc.harbinger.util.extensions.isCalendarDay
-import java.lang.IllegalArgumentException
-import java.util.Calendar
+import org.threeten.bp.*
 
 
 /**
  * An order of work to schedule weekly jobs
+ *
  * @param id the id of the order/request
  * @param tag the tag of the order/request, used to find the WorkCreator
  * @param extras the extra data content related to this request
- * @param startTimeInMillis the start time during the [day] that this request should schedule for
- * @param endTimeInMillis the end time when this work should not execute. If set, exact will be set to true
- * @param day the day of the week that this work order should execute on
- * @param exact whether or not this order needs to be filled at the exact [startTimeInMillis], or if it can allow for doze/standby
- * @param intervalInMillis the interval in ms that this weekly order should repeat
+ *
+ * @param startTime the start time during the [daysOfWeek] that this request should schedule for
+ * @param endTime the end time when this work should not execute. If set, exact will be set to true
+ *
+ * @param daysOfWeek the days of the week that this work order should execute on
+ * @param interval the interval duration that this weekly order should repeat
  */
 data class WorkOrder(
     val id: Int,
     val tag: String,
     val extras: PersistableBundleCompat,
 
-    val startTimeInMillis: Long,
-    val endTimeInMillis: Long?,
-    val exact: Boolean,
-    val day: Int?,
-    val intervalInMillis: Long?
+    val startTime: OffsetDateTime,
+    val endTime: OffsetDateTime?,
+
+    val daysOfWeek: Set<DayOfWeek>,
+    val interval: Duration?
 ) {
 
-    private constructor(builder: Builder): this(builder.id, builder.tag, builder.extras, builder.startTimeInMillis,
-        builder.endTimeInMillis, builder.exact, builder.day, builder.intervalInMillis)
+    private constructor(builder: Builder): this(builder.id, builder.tag, builder.extras, builder.startTime!!,
+        builder.endTime, builder.days, builder.interval)
 
-
-    class Builder(val tag: String) {
-        var id: Int = NO_ID
+    class Builder(val tag: String, val id: Int) {
         var extras: PersistableBundleCompat = PersistableBundleCompat()
-        var startTimeInMillis: Long = 0L
-        var endTimeInMillis: Long? = null
-        var day: Int? = null
-        var exact: Boolean = false
-        var intervalInMillis: Long? = null
+        var startTime: OffsetDateTime? = null
+        var endTime: OffsetDateTime? = null
+        var days: Set<DayOfWeek> = emptySet()
+        var interval: Duration? = null
 
         fun extras(builder: Extras.() -> Unit) {
             extras = Extras().apply(builder).build()
         }
 
         fun build(): WorkOrder {
-            if (startTimeInMillis == 0L) throw IllegalArgumentException("Start Time must be greater than 0")
-            if (endTimeInMillis != null && startTimeInMillis > endTimeInMillis!!) throw IllegalArgumentException("Start time MUST be BEFORE end time")
-            if (day?.isCalendarDay() == false) throw IllegalArgumentException("'day' must be one of the Calendar.DAY_OF_WEEK values")
-            if (day == null && intervalInMillis != null && intervalInMillis!! < MIN_INTERVAL) throw IllegalArgumentException("Interval must be greater than 15 minutes when day is null") /* disabled for testing */
-            if (day != null && intervalInMillis == null) throw IllegalArgumentException("You MUST set an interval if you have set a day")
-            if (day != null && intervalInMillis != null && intervalInMillis!! % WEEK_INTERVAL != 0L) throw IllegalArgumentException("You MUST set an interval that is a multiple of 1 week in milliseconds if you have set a day")
-
-            // If end time is specified, this is automatically set to exact
-            if (endTimeInMillis != null || intervalInMillis == null) {
-                exact = true
-            }
-
+            require(startTime != null) { "startTime must be greater than 0" }
+            require(startTime?.offset == ZoneOffset.UTC) { "startTime must be offset to UTC time" }
+            require(!(endTime != null && endTime!!.offset != ZoneOffset.UTC)) { "endTime must be offset to UTC time" }
+            require(!(endTime != null && startTime!!.isAfter(endTime!!))) { "startTime MUST be BEFORE endTime" }
+            require(!(days.isEmpty() && interval != null && interval!!.toMillis() < MIN_INTERVAL)) { "Interval must be greater than 15 minutes when day is null" } /* disabled for testing */
+            require(!(days.isNotEmpty() && interval == null)) { "You MUST set an interval if you have set a day" }
+            require(!(days.isNotEmpty() && interval != null && interval!!.toDays() % 7 != 0L)) { "You MUST set an interval that is a multiple of 1 week in milliseconds if you have set a day" }
             return WorkOrder(this)
         }
     }
 
     companion object {
+        const val NO_DAY = -1
         const val NO_ID = -1
         const val DEAD_ID = -2
         const val MIN_INTERVAL = 900000L
-        const val WEEK_INTERVAL = 604800000L
 
         const val KEY_ID = "com.ftinc.harbinger.work.ID"
-        const val KEY_TIME = "com.ftinc.harbinger.work.TIME"
+        const val KEY_DAY = "com.ftinc.harbinger.work.DAY_OF_WEEK"
+        const val KEY_TIME = "com.ftinc.harbinger.work.ISO_TIME"
     }
 }
 
-fun workOrder(tag: String, builder: WorkOrder.Builder.() -> Unit): WorkOrder {
-    val b = WorkOrder.Builder(tag)
+fun workOrder(tag: String, id: Int, builder: WorkOrder.Builder.() -> Unit): WorkOrder {
+    val b = WorkOrder.Builder(tag, id)
     b.builder()
     return b.build()
 }

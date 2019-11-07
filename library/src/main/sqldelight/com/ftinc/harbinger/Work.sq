@@ -1,19 +1,21 @@
+import java.lang.Integer;
+
 CREATE TABLE work_orders (
     id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     work_id INTEGER AS Integer NOT NULL,
     tag TEXT NOT NULL,
     extras TEXT NOT NULL,
-    start_time INTEGER NOT NULL,
-    end_time INTEGER,
-    day INTEGER AS Integer,
-    exact INTEGER AS Integer NOT NULL,
-    interval INTEGER
+    start_time TEXT NOT NULL,
+    end_time TEXT,
+    days_of_week TEXT,
+    interval_seconds INTEGER,
+    interval_nanos INTEGER AS Integer
 );
 
 CREATE UNIQUE INDEX work_orders_work_id ON work_orders(work_id);
 
 insert:
-INSERT OR REPLACE INTO work_orders (work_id, tag, extras, start_time, end_time, day, exact, interval)
+INSERT OR REPLACE INTO work_orders (work_id, tag, extras, start_time, end_time, days_of_week, interval_seconds, interval_nanos)
 VALUES (?, ?, ?, ?, ?, ? ,?, ?);
 
 selectAll:

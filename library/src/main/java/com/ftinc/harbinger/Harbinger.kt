@@ -3,14 +3,17 @@ package com.ftinc.harbinger
 import android.annotation.SuppressLint
 import android.app.AlarmManager
 import android.content.Context
+import android.content.Intent
 import android.os.Build
 import android.os.PowerManager
 import com.ftinc.harbinger.logging.WorkLogger
 import com.ftinc.harbinger.logging.LogcatLogger
 import com.ftinc.harbinger.storage.DatabaseWorkStorage
 import com.ftinc.harbinger.storage.WorkStorage
+import com.ftinc.harbinger.work.OrderEvent
 import com.ftinc.harbinger.work.WorkCreator
 import com.ftinc.harbinger.work.WorkOrder
+import com.jakewharton.threetenabp.AndroidThreeTen
 import kotlinx.coroutines.*
 import java.lang.IllegalStateException
 import java.util.concurrent.Executors
@@ -36,11 +39,9 @@ object Harbinger {
     internal var logger: WorkLogger = LogcatLogger()
     internal val workCreators = HashMap<String, WorkCreator>()
     internal val workExecutor = Executors.newSingleThreadExecutor()
-    internal val workJobs = ArrayList<Job>()
 
-    private val storageScope = CoroutineScope(Dispatchers.Default)
+    private val storageScope = CoroutineScope(Executors.newSingleThreadExecutor().asCoroutineDispatcher())
     private var storage: WorkStorage? = null
-
 
     /**
      * Initialize Harbinger with the android context
@@ -48,6 +49,7 @@ object Harbinger {
      */
     fun create(context: Context, workScheduler: WorkScheduler = WorkScheduler(context.applicationContext)): Harbinger {
         if (!initialized) {
+            AndroidThreeTen.init(context)
 
             // Check if null, can happen during testing
             applicationContext = if (context.applicationContext != null) {
@@ -214,8 +216,15 @@ object Harbinger {
     /**
      * Reschedule a work order for the next available date
      */
-    internal fun reschedule(order: WorkOrder, lastScheduledTime: Long) {
-        scheduler.reschedule(order, lastScheduledTime)
+    internal fun reschedule(order: WorkOrder, intent: Intent) {
+        val resultId = scheduler.reschedule(order, intent)
+        if (resultId == WorkOrder.DEAD_ID) {
+            if (order.id != WorkOrder.NO_ID) {
+                storageScope.launch {
+                    storage?.delete(order.id)
+                }
+            }
+        }
     }
 
     /**
@@ -242,9 +251,19 @@ object Harbinger {
     }
 
     /**
+     * Insert a [WorkOrder] event for record keeping and re-scheduling purposes
+     * @param event the order event to insert
+     */
+    internal fun insertEvent(event: OrderEvent) {
+        storageScope.launch {
+            storage?.insert(event)
+        }
+    }
+
+    /**
      * Check to see if [Harbinger] has been initialized, if not throw error
      */
     private fun checkInitialization() {
-        if (!initialized) throw IllegalStateException("You must initialize Harbinger first via `create()`")
+        check(initialized) { "You must initialize Harbinger first via `create()`" }
     }
 }

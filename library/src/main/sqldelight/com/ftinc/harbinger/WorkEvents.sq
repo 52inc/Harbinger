@@ -1,0 +1,23 @@
+CREATE TABLE order_events (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    work_id INTEGER AS Integer NOT NULL,
+
+    scheduled_time TEXT NOT NULL,
+    delivered_time TEXT NOT NULL,
+    day_of_week INTEGER AS Integer,
+
+    event INTEGER AS Integer NOT NULL,
+    event_description TEXT,
+
+    FOREIGN KEY (work_id) REFERENCES work_orders(work_id)
+);
+
+insert:
+INSERT INTO order_events (work_id, scheduled_time, delivered_time, day_of_week, event, event_description)
+VALUES (?, ?, ?, ?, ?, ?);
+
+selectAll:
+SELECT * FROM order_events;
+
+forWorkId:
+SELECT * FROM order_events WHERE work_id = ?;
