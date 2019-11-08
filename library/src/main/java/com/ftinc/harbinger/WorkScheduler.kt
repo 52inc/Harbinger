@@ -91,7 +91,7 @@ class WorkScheduler(
             val intent = createIntent(context) {
                 putExtra(WorkOrder.KEY_ID, order.id)
                 if (scheduledDay != null) {
-                    putExtra(WorkOrder.KEY_ID, scheduledDay)
+                    putExtra(WorkOrder.KEY_DAY, scheduledDay.value)
                 }
             }
 
@@ -114,6 +114,9 @@ class WorkScheduler(
                 Harbinger.logger.d(
                     "Re-scheduling exact weekly alarm for (${nextDateTime.isoTime()})"
                 )
+
+                // Be sure that we store the scheduled time in the intent
+                intent.putExtra(WorkOrder.KEY_TIME, nextDateTime.isoTime())
 
                 val operation = PendingIntent.getBroadcast(
                     context,

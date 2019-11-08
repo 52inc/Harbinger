@@ -24,6 +24,7 @@ class MessageWorker : Worker() {
             .setSmallIcon(R.drawable.ic_messages_icon)
             .setCategory(NotificationCompat.CATEGORY_MESSAGE)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
             .setAutoCancel(true)
             .build()
 

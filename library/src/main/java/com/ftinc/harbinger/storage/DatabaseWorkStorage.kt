@@ -97,8 +97,8 @@ class DatabaseWorkStorage(context: Context) : WorkStorage {
                 work_id,
                 tag,
                 PersistableBundleCompat.fromXml(extras),
-                OffsetDateTime.parse(start_time, DateTimeFormatter.ISO_TIME),
-                OffsetDateTime.parse(end_time, DateTimeFormatter.ISO_TIME),
+                OffsetDateTime.parse(start_time, DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+                end_time?.let { OffsetDateTime.parse(it, DateTimeFormatter.ISO_OFFSET_DATE_TIME) },
                 days_of_week.decompress(),
                 interval
             )

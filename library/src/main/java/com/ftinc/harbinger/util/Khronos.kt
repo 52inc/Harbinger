@@ -1,6 +1,8 @@
 package com.ftinc.harbinger.util
 
 import androidx.annotation.VisibleForTesting
+import com.ftinc.harbinger.Harbinger
+import com.ftinc.harbinger.util.extensions.isoTime
 import org.threeten.bp.*
 import org.threeten.bp.temporal.TemporalAdjusters
 
@@ -65,12 +67,12 @@ object Khronos {
 
         // Check if enough time has elapsed since the interval of the previous scheduled time
         val elapsedSincePrevious = Duration.between(previousScheduledTime, moment)
+        Harbinger.logger.d("Elapsed time since ${previousScheduledTime.isoTime()} and now(${moment.isoTime()}) is $elapsedSincePrevious < $interval")
         return if (elapsedSincePrevious < interval) {
             // Now compute the earliest possible date that we could begin scheduling the next event
             val minimumScheduleTime = previousScheduledTime.plus(interval)
             minimumScheduleTime
                 .with(TemporalAdjusters.nextOrSame(dayOfWeek))
-                .with(time.toOffsetTime())
         } else {
             // Enough time HAS passed since the previous scheduled date and we should schedule for the
             // next available date for the given input

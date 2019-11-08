@@ -6,6 +6,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
+import android.support.v4.app.NotificationManagerCompat
 import com.facebook.stetho.Stetho
 import com.ftinc.harbinger.job.MessageWorker
 
@@ -20,6 +21,7 @@ class App : Application() {
         createChannel(this, MessageWorker.CHANNEL_ID) {
             name = "Harbinger Test"
             description = "Testing Notification dispatching"
+            importance = NotificationManagerCompat.IMPORTANCE_HIGH
         }
 
         Harbinger.create(this)

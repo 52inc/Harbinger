@@ -1,5 +1,7 @@
 package com.ftinc.harbinger.util
 
+import com.ftinc.harbinger.Harbinger
+import com.ftinc.harbinger.TestLogger
 import org.amshove.kluent.shouldBeNull
 import org.amshove.kluent.shouldEqual
 import org.amshove.kluent.shouldNotBeNull
@@ -24,6 +26,7 @@ class KhronosTest {
 
     @Before
     fun setUp() {
+        Harbinger.setLogger(TestLogger())
         Khronos.timeSpace = timeSpace
     }
 

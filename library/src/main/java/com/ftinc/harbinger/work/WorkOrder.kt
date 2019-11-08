@@ -63,7 +63,7 @@ data class WorkOrder(
 
         const val KEY_ID = "com.ftinc.harbinger.work.ID"
         const val KEY_DAY = "com.ftinc.harbinger.work.DAY_OF_WEEK"
-        const val KEY_TIME = "com.ftinc.harbinger.work.ISO_TIME"
+        const val KEY_TIME = "com.ftinc.harbinger.work.ISO_OFFSET_DATE_TIME"
     }
 }
 

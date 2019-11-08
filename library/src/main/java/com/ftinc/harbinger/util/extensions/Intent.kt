@@ -8,7 +8,7 @@ import org.threeten.bp.format.DateTimeFormatter
 
 fun Intent.getOffsetDateTimeExtra(key: String): OffsetDateTime? {
     return getStringExtra(key)?.let { isoTime ->
-        OffsetDateTime.parse(isoTime, DateTimeFormatter.ISO_TIME)
+        OffsetDateTime.parse(isoTime, DateTimeFormatter.ISO_OFFSET_DATE_TIME)
     }
 }
 

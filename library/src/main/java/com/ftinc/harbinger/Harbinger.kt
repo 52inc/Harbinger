@@ -219,6 +219,7 @@ object Harbinger {
     internal fun reschedule(order: WorkOrder, intent: Intent) {
         val resultId = scheduler.reschedule(order, intent)
         if (resultId == WorkOrder.DEAD_ID) {
+            logger.d("Rescheduling failed with a dead_id for Order(${order.id})")
             if (order.id != WorkOrder.NO_ID) {
                 storageScope.launch {
                     storage?.delete(order.id)

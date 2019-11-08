@@ -25,7 +25,7 @@ class WorkReceiver : CoroutineBroadcastReceiver() {
         val deliveredTime = OffsetDateTime.now(ZoneOffset.UTC)
         val scheduledDay = intent.getDayOfWeekExtra(WorkOrder.KEY_DAY)
         val scheduledTime = intent.getOffsetDateTimeExtra(WorkOrder.KEY_TIME)
-            ?: OffsetDateTime.of(0, 0, 0, 0, 0, 0, 0, ZoneOffset.UTC)
+            ?: OffsetDateTime.of(0, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC)
 
         val id = intent.getIntExtra(WorkOrder.KEY_ID, -1)
         if (id != WorkOrder.NO_ID) {
